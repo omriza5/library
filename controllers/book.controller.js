@@ -40,16 +40,31 @@ const getBooksByPublishYear = async (req, res) => {
 
 const updateBook = async (req, res) => {
   const bookId = req.params.bookId;
-  const rating = req.body.rating;
+  const book = await Book.findById(bookId);
+
+  const updatedBook = {
+    name: book._doc.name,
+    author: book._doc.author,
+    publishYear: book._doc.publishYear,
+    rating: book._doc.rating,
+    lang: book._doc.lang,
+    ...req.body,
+  };
+  const { error } = bookValidationSchema.validate(updatedBook);
+
+  if (error) {
+    const errorMessage = error.details[0].message;
+    return res.status(400).send(errorMessage);
+  }
 
   try {
-    const book = await Book.findById({ _id: bookId });
-    book.rating = rating;
-    book.save();
+    book.set(req.body);
+    await book.save();
 
-    res.send(book);
+    res.status(200).send(book);
   } catch (error) {
-    res.status(500).send("Somthing Went Wrong.");
+    console.log(error);
+    res.status(500).send(error);
   }
 };
 
